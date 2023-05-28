@@ -1,62 +1,138 @@
-local spawnInterval = 5 -- Time interval between each zombie spawn (in seconds)
-local maxZombies = 10 -- Maximum number of zombies to spawn
+local Config = {}
 
-local zombieModels = {
+-- Configuration settings
+Config.ZombieModels = {
     "model1",
     "model2",
     "model3"
     -- Add more zombie models as desired
 }
 
-local spawnPoints = {
-    Vector3.new(10, 0, 10),
-    Vector3.new(20, 0, 20),
-    Vector3.new(30, 0, 30)
+Config.BossModels = {
+    "boss1",
+    "boss2",
+    "boss3"
+    -- Add more boss models as desired
+}
+
+Config.SpawnPoints = {
+    vector3(10, 0, 10),
+    vector3(20, 0, 20),
+    vector3(30, 0, 30)
     -- Add more spawn points as desired
 }
 
+Config.RedZones = {
+    vector3(5, 0, 5),
+    vector3(15, 0, 15),
+    vector3(25, 0, 25)
+    -- Add red zone locations as desired
+}
+
+Config.SafeZones = {
+    vector3(7, 0, 7),
+    vector3(17, 0, 17),
+    vector3(27, 0, 27)
+    -- Add safe zone locations as desired
+}
+
+Config.SoundRange = 10 -- Range within which zombies can hear sounds
+
 local function spawnZombie()
-    -- Choose a random zombie model
-    local zombieModel = zombieModels[math.random(1, #zombieModels)]
+    local zombieModel = Config.ZombieModels[math.random(1, #Config.ZombieModels)]
+    local spawnPoint = Config.SpawnPoints[math.random(1, #Config.SpawnPoints)]
+    local isRedZone = false
 
-    -- Choose a random spawn point
-    local spawnPoint = spawnPoints[math.random(1, #spawnPoints)]
+    for _, redZone in ipairs(Config.RedZones) do
+        if #(spawnPoint - redZone) < 5 then
+            isRedZone = true
+            break
+        end
+    end
 
-    -- Spawn the zombie at the selected spawn point
-    local zombie = Instance.new("Model")
-    zombie.Name = "Zombie"
-    -- Set the zombie model to the chosen zombie model
-    -- zombie.Model = zombieModel
-    -- Position the zombie at the selected spawn point
-    zombie:SetPrimaryPartCFrame(CFrame.new(spawnPoint))
+    if isRedZone then
+        for _, safeZone in ipairs(Config.SafeZones) do
+            if #(spawnPoint - safeZone) < 5 then
+                return -- Abort zombie spawn if within safe zone
+            end
+        end
+    end
 
+    local ped = exports["qb-core"]:SpawnNPC(zombieModel, spawnPoint, nil, false)
     -- Add any additional customization or logic for the zombie here
 
-    -- Parent the zombie to the workspace or desired location
-    zombie.Parent = workspace
+    local zombieStrength = isRedZone and 3 or 1 -- Zombie is three times stronger in red zones
+    ped:setAttribute("Strength", zombieStrength)
+
+    -- Function to move the zombie towards the sound source
+    local function moveTowardsSound(soundPosition)
+        ped:taskGoToCoordAnyMeans(soundPosition.x, soundPosition.y, soundPosition.z, 2.0, 0, 0, 786603, 0xbf800000)
+    end
+
+    -- Example code to simulate sound source triggering
+    -- Replace this with your actual sound trigger logic
+    local soundTrigger = CreateSoundTrigger(spawnPoint)
+    soundTrigger:onTrigger(function(player)
+        moveTowardsSound(player:getCoords())
+    end)
 end
 
--- Function to continuously spawn zombies
-local function startSpawningZombies()
-    while true do
-        -- Check the number of zombies currently spawned
-        local zombies = workspace:GetChildren()
-        local numZombies = 0
-        for _, zombie in ipairs(zombies) do
-            if zombie.Name == "Zombie" then
-                numZombies = numZombies + 1
+local function spawnBoss()
+    local bossModel = Config.BossModels[math.random(1, #Config.BossModels)]
+    local spawnPoint = nil
+    local isRedZone = false
+
+    while spawnPoint == nil do
+        local randomRedZone = Config.RedZones[math.random(1, #Config.RedZones)]
+        local isInSafeZone = false
+
+        for _, safeZone in ipairs(Config.SafeZones) do
+            if #(randomRedZone - safeZone) < 5 then
+                isInSafeZone = true
+                break
             end
         end
 
-        -- Spawn a new zombie if the maximum limit has not been reached
-        if numZombies < maxZombies then
-            spawnZombie()
+        if not isInSafeZone then
+            spawnPoint = randomRedZone
+            isRedZone = true
         end
+    end
 
-        -- Delay the next zombie spawn
-        wait(spawnInterval)
+    local ped = exports["qb-core
+    "]:SpawnNPC(bossModel, spawnPoint, nil, false)
+    -- Add any additional customization or logic for the boss here
+
+    local bossStrength = isRedZone and 3 or 1 -- Boss is three times stronger in red zones
+    ped:setAttribute("Strength", bossStrength)
+
+    -- Function to move the boss towards the sound source
+    local function moveTowardsSound(soundPosition)
+        ped:taskGoToCoordAnyMeans(soundPosition.x, soundPosition.y, soundPosition.z, 2.0, 0, 0, 786603, 0xbf800000)
+    end
+
+    -- Example code to simulate sound source triggering
+    -- Replace this with your actual sound trigger logic
+    local soundTrigger = CreateSoundTrigger(spawnPoint)
+    soundTrigger:onTrigger(function(player)
+        moveTowardsSound(player:getCoords())
+    end)
+end
+
+local function startSpawningEntities()
+    while true do
+        spawnZombie()
+        Citizen.Wait(Config.SpawnInterval * 1000)
     end
 end
 
--- Start spawning zombies
-startSpawningZombies()
+Citizen.CreateThread(function()
+    startSpawningEntities()
+end)
+```
+
+Note that this script assumes you have the `qb-core` resource properly installed and running in your FiveM server. The `CreateSoundTrigger` function is a custom function that you'll need to implement yourself. It should create a sound trigger at the given position and trigger the provided callback when a player enters the trigger area.
+
+Make sure to update the `Config` table with the appropriate values for your server, such as zombie models, boss models, spawn points, red zones, safe zones, and sound range.
+
+Remember to test and tweak the script as needed for your specific server setup.
