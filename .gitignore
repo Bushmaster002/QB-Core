@@ -1,41 +1,62 @@
-# Compiled Lua sources
-luac.out
+local spawnInterval = 5 -- Time interval between each zombie spawn (in seconds)
+local maxZombies = 10 -- Maximum number of zombies to spawn
 
-# luarocks build files
-*.src.rock
-*.zip
-*.tar.gz
+local zombieModels = {
+    "model1",
+    "model2",
+    "model3"
+    -- Add more zombie models as desired
+}
 
-# Object files
-*.o
-*.os
-*.ko
-*.obj
-*.elf
+local spawnPoints = {
+    Vector3.new(10, 0, 10),
+    Vector3.new(20, 0, 20),
+    Vector3.new(30, 0, 30)
+    -- Add more spawn points as desired
+}
 
-# Precompiled Headers
-*.gch
-*.pch
+local function spawnZombie()
+    -- Choose a random zombie model
+    local zombieModel = zombieModels[math.random(1, #zombieModels)]
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-*.def
-*.exp
+    -- Choose a random spawn point
+    local spawnPoint = spawnPoints[math.random(1, #spawnPoints)]
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+    -- Spawn the zombie at the selected spawn point
+    local zombie = Instance.new("Model")
+    zombie.Name = "Zombie"
+    -- Set the zombie model to the chosen zombie model
+    -- zombie.Model = zombieModel
+    -- Position the zombie at the selected spawn point
+    zombie:SetPrimaryPartCFrame(CFrame.new(spawnPoint))
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+    -- Add any additional customization or logic for the zombie here
 
+    -- Parent the zombie to the workspace or desired location
+    zombie.Parent = workspace
+end
+
+-- Function to continuously spawn zombies
+local function startSpawningZombies()
+    while true do
+        -- Check the number of zombies currently spawned
+        local zombies = workspace:GetChildren()
+        local numZombies = 0
+        for _, zombie in ipairs(zombies) do
+            if zombie.Name == "Zombie" then
+                numZombies = numZombies + 1
+            end
+        end
+
+        -- Spawn a new zombie if the maximum limit has not been reached
+        if numZombies < maxZombies then
+            spawnZombie()
+        end
+
+        -- Delay the next zombie spawn
+        wait(spawnInterval)
+    end
+end
+
+-- Start spawning zombies
+startSpawningZombies()
